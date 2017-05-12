@@ -1,0 +1,37 @@
+For executing parSyn, use, 
+
+mpiexec -np <number_of_cores> parSyn <input_file_name> <variable_name_file> <variable_order> <variable_order_file> <timeOutTime> <print_skolem_functions> <compute_for_neg_F> 
+
+where
+
+1. input_file_name is name of circuit containing the Boolean formula in aiger or verilog format.
+2. variable_name_file is file containing the names of the (output) variables, i.e., variables whose Skolem functions are to be generated.
+3. variable_order is  an integer which indicates which ordering to use for the input variables -  0:lexicographic, 1: least occurring first; 2:external.
+
+4. variable_order_file is file containing the variable order. This is ignored if variable_order is 0 or 1.
+5. timeOutTime is internal timeout in seconds. timeOutTime = 0 implies that exact skolem functions will not computed at intermediate nodes.
+6. print_skolem_functions = 1 for printing the skolem functions in file; 0 otherwise.
+7. compute_for_neg_F = 1 for computing Skolem functions for negation of input formula; 0 otherwise. 
+
+For executing in a computer-cluster, this should be written in 
+a PBS script. Please see scripts/sample-pbs-script.sh for an example pbs script. 
+
+2) For experiments using SkolemFunctionGenerator:
+
+To execute SkolemFunctionGenerator, use, 
+
+SkolemFunctionGenerator [options] <input_file_name> <variable_name_file>
+
+where
+
+input_file_name is name of circuit containing the Boolean formula in aiger or verilog format.
+variable_name_file is file containing the names of the (output) variables, i.e., variables whose Skolem functions are to be generated.
+
+SkolemFunctionGenerator contains implementations of the algorithms 
+1) CegarSkolem
+2) MonoSkolem, and 
+3) sequential version of parSyn (called CSeqCegar)
+
+To see the [options], just type SkolemFunctionGenerator
+
+

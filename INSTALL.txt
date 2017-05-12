@@ -1,0 +1,21 @@
+These are the installation instructions for parSyn (Parallel Boolean Function
+Synthesis Tool), and SkolemFunctionGenerator (Sequential Boolean Function 
+Synthesis Tool). 
+
+Prerequisites: ABC tool (from http://www.eecs.berkeley.edu/~alanmi/abc/) is a 
+	       prerequisite for both parSyn and SkolemFunctionGenerator. 
+
+	       For installing parSyn, mpic++ (from https://www.open-mpi.org/doc/v1.8/man1/mpic++.1.php)
+	       and Boost library (from http://www.boost.org) are also needed. 
+	       We need the library Boost.mpi in Boost library (note that Boost.mpi 
+	       needs to be installed explicitly during installation of Boost.)
+
+To install parSyn and SkolemFunctionGenerator, 
+1) cd src/
+2) Ensure that the variables ABC_PATH, LIBS, B_INCLUDE, and BOOST_MPI_LIBS are 
+   properly set in Makefile.  
+3) do make
+
+This creates the binaries parSyn and SkolemFunctionGenerator inside bin/
+
+
