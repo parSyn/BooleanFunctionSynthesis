@@ -4,13 +4,24 @@ FileName : main.cc
 SystemName: ParSyn : Parallel Boolean Funciton Synthesis Tool/ Parallel Skolem Function Generation Tool.
 Boolean Function Synthesis and Skolem Function Generation are essentially the same problems :). Both terms are used in the code
 
-Authors: Shetal Shah and Ajith John 
- 
-Affliation: IIT Bombay
+Description: This file contains the code to synthesize boolean functions in parallel - specifically it contains the code required to schedule the computation of r0 and r1 sets of each node of the AIG on worker nodes.
 
-Description: The file contains the code to synthesize boolean functions in parallel - specifically it contains the code required to schedule the computation of r0 and r1 sets of each node of the AIG on worker nodes.
+Copyright (C) 2017  Shetal Shah and Ajith John 
 
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ************************************************************/
+
 #include <iostream>
 #include <fstream>
 #include <string.h>
