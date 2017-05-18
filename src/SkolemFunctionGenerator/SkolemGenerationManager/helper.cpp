@@ -3,11 +3,22 @@ FileName : helper.cpp
 
 SystemName: ParSyn : Parallel Boolean Funciton Synthesis Tool/ Parallel Skolem Function Generation Tool.
 
-Authors: Shetal Shah, Dinesh Chattani, Ajith John
- 
-Affliation: IIT Bombay
-
 Description: The file contains a number of functions that are used by the functions in AIGBasedSkolem.cc
+
+Copyright (C) 2017  Shetal Shah and Ajith John 
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ************************************************************/
 
 #include <iostream>
@@ -511,6 +522,9 @@ bool exit_after_finding_abstract_skolem_functions = false;
 
  // Options for simplifying the command-line options
  bool prove_correctness_of_skolem_functions = false; 
+
+ // For Ocan's inputs
+ bool negate_input_boolean_formula = false;
 //#########################################################################
 
 
@@ -1245,6 +1259,8 @@ void limited_usage()
 	cout<<"\nPROVE-CORRECTNESS=<true/false>";
 	cout<<"\t\t\t\tto prove correctness of Skolem functions generated (by default false)";
 
+	cout<<"\nNEGATE-INPUT=<true/false>";
+	cout<<"\t\t\t\tto negate the input boolean formula (by default false)";
 
 	// options for CEGAR based algorithms
 	cout<<"\n\nOptions for CegarSkolem are:\n";
@@ -1348,6 +1364,9 @@ void basic_usage()
 	cout<<"\nPROVE-CORRECTNESS=<true/false>";
 	cout<<"\t\t\t\tto prove correctness of Skolem functions generated (by default false)";
 
+	cout<<"\nNEGATE-INPUT=<true/false>";
+	cout<<"\t\t\t\tto negate the input boolean formula (by default false)";
+
 	cout<<"\nGRACEFUL-TIMEOUT=<time-out in seconds>";
 	cout<<"\t\t\tafter graceful-timeout, CSeqCegar skips refinement loop and";
 	cout<<"\n\t\t\t\t\t\t\treturns the initial r1/r0's (disabled by default)\n\n";
@@ -1414,6 +1433,8 @@ void usage()
 	cout<<"\nPROVE-CORRECTNESS=<true/false>";
 	cout<<"\t\t\t\tto prove correctness of Skolem functions generated (by default false)";
 
+	cout<<"\nNEGATE-INPUT=<true/false>";
+	cout<<"\t\t\t\tto negate the input boolean formula (by default false)";
 
 	// options for CEGAR based algorithms
 	cout<<"\n\nOptions for CegarSkolem are:\n";
@@ -1896,6 +1917,22 @@ void setArgument(const string & name, const string &value)
 	else
 	{
 		cout << "Value of GENERATE-ARBITRARY-BOOLEAN-COMBINATIONS is "<< value << endl;
+		assert(false && "Invalid Value");
+	}	        
+    }
+  else if(name == "NEGATE-INPUT")
+    {
+	if(value == "true")
+	{
+		negate_input_boolean_formula = true;
+	}
+	else if(value == "false")
+	{
+		negate_input_boolean_formula = false;
+	}
+	else
+	{
+		cout << "Value of NEGATE-INPUT is "<< value << endl;
 		assert(false && "Invalid Value");
 	}	        
     }
@@ -13544,6 +13581,15 @@ void obtainVariableEliminationBenchmark(ABC* abcObj, Abc_Frame_t* abcFrame, Aig_
 	Aig_Obj_t* root_of_conjunction;
 	root_of_conjunction = Aig_ObjChild0(CO_aig_manager);	
 	assert(root_of_conjunction != NULL);
+
+	if(negate_input_boolean_formula)
+	{
+		#ifdef DEBUG_SKOLEM
+		cout << "\nInput formula negated\n";
+		#endif
+
+		root_of_conjunction = createNot(root_of_conjunction, aig_manager);
+	}
 
 	if(perform_cegar_on_arbitrary_boolean_formulas)
 	{
