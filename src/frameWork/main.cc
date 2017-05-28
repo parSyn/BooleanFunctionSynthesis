@@ -900,7 +900,7 @@ void assignBlocktoProcess(communicator& world, queue<int>& processBlocks, queue<
 	}
 }
 
-void printSkolemFunctionsToFile (Abc_Ntk_t *pNtk, Aig_Man_t *pAig, map<int,Block>& blockMap, int *markArray, AIGBasedSkolem * aigbs, char * orderFileName, char * aigFileName, bool solvedAtMaster, set<string> &non_occuring_variables_to_eliminate, list<string> &order_of_elimination)
+void printSkolemFunctionsToFile (Abc_Ntk_t *pNtk, Aig_Man_t *pAig, map<int,Block>& blockMap, int *markArray, AIGBasedSkolem * aigbs, char * orderFileName, char * aigFileName, bool solvedAtMaster, set<string> &non_occuring_variables_to_eliminate, list<string> &order_of_elimination, bool perform_reverse_substitution_before_printing)
 {
 		//Dump Skolem functions of the topmost node into a file
 		vector<Aig_Obj_t*> list_of_r1_roots;
@@ -926,7 +926,8 @@ void printSkolemFunctionsToFile (Abc_Ntk_t *pNtk, Aig_Man_t *pAig, map<int,Block
 			//Get list of r1 roots From Hash Table
 		}
 
-		aigbs->performReverseSubstitutionOfSkolemFunctions(list_of_r1_roots) ;	//Perform Reverse Substitution
+		if(perform_reverse_substitution_before_printing)
+			aigbs->performReverseSubstitutionOfSkolemFunctions(list_of_r1_roots) ;	//Perform Reverse Substitution
 
 		// Added by Ajith John
 		set<string> support_of_skolem;
@@ -1570,6 +1571,79 @@ void workerCode (communicator & world, Aig_Man_t * pAig, map<int,Block> blockMap
 	}
 }
 
+
+
+void printSkolemFunctionSizesToFile (Aig_Man_t *pAig, map<int,Block>& blockMap, AIGBasedSkolem* aigbs, char * aigFileName, bool solvedAtMaster, bool perform_reverse_substitution_before_printing)
+{
+		unsigned long long int sum__skolem_function_sizes__after = 0;
+		unsigned long long int sum__skolem_function_sizes__before = 0;
+		float avg__skolem_function_sizes__after;
+		float avg__skolem_function_sizes__before;
+
+		vector<Aig_Obj_t*> list_of_r1_roots;
+
+		Aig_Obj_t *pFanin = Aig_ObjFanin0(Aig_ManCo(pAig, 0));
+		Block *bptr = &blockMap[Aig_ObjId(pFanin)];
+		vector<Aig_Obj_t*> createdCos;
+	
+		if (! solvedAtMaster)
+		{
+			if (bptr-> and_r1.size() > 0)
+				convertIntArrayToAigObj (pAig, bptr->and_r1, list_of_r1_roots, createdCos, true);
+			if (bptr-> or_r1.size() > 0)
+				convertIntArrayToAigObj (pAig, bptr->or_r1, list_of_r1_roots,  createdCos, true);
+		}
+		else
+		{
+			//Get list of r1 roots From Hash Table
+		}
+
+		#ifdef DEBUG_SKOLEM
+		cout << endl;
+		#endif
+
+		for(int i = 0; i < list_of_r1_roots.size(); i++)
+		{
+			Aig_Obj_t* skolem_i = list_of_r1_roots[i];
+			int skolem_i_size = computeSize(skolem_i, pAig); 
+			#ifdef DEBUG_SKOLEM
+			cout << skolem_i_size << "\t";
+			#endif
+			sum__skolem_function_sizes__before = sum__skolem_function_sizes__before + skolem_i_size;			
+		}
+
+		avg__skolem_function_sizes__before = (float)sum__skolem_function_sizes__before/(float)list_of_r1_roots.size();
+
+		if(perform_reverse_substitution_before_printing)
+			aigbs->performReverseSubstitutionOfSkolemFunctions(list_of_r1_roots) ;	//Perform Reverse Substitution
+		#ifdef DEBUG_SKOLEM
+		cout << endl;
+		#endif
+
+		for(int i = 0; i < list_of_r1_roots.size(); i++)
+		{
+			Aig_Obj_t* skolem_i = list_of_r1_roots[i];
+			int skolem_i_size = computeSize(skolem_i, pAig); 
+			#ifdef DEBUG_SKOLEM
+			cout << skolem_i_size << "\t";
+			#endif
+			sum__skolem_function_sizes__after = sum__skolem_function_sizes__after + skolem_i_size;			
+		}
+		
+		avg__skolem_function_sizes__after = (float)sum__skolem_function_sizes__after/(float)list_of_r1_roots.size();
+
+		string fileName(aigFileName);
+		fileName = fileName.substr(fileName.find_last_of("/") + 1);  //Get the file name;
+		fileName.erase(fileName.find ("."), string::npos); //This contains the code for the raw file name;
+		fileName.append("_size.dat"); 
+
+		FILE* size_fp = fopen(fileName.c_str(), "w");
+		assert(size_fp != NULL);	
+		fprintf(size_fp, "%s\t%f\t%f\n", aigFileName, avg__skolem_function_sizes__before, avg__skolem_function_sizes__after);
+
+		fclose(size_fp);		
+}
+
 /* Main function */
 
 
@@ -1675,15 +1749,36 @@ Aig_Man_t * pAig;
 //#else
         Abc_Ntk_t* pNtk =  Abc_FrameReadNtk (pAbc);
 
-if (negOutputOfF)	//Temporary Hack added for ReactSyn benchmarks - SS
+int negflag = 0;
+
+if(negOutputOfF)    //Temporary Hack added for ReactSyn benchmarks - SS
 {
-	Abc_Obj_t* pCo = Abc_NtkPo(pNtk,0);
-	Abc_Obj_t* pFanin = Abc_ObjFanin0(pCo);
-	Abc_ObjDeleteFanin(pCo, pFanin);
-	Abc_ObjAddFanin(pCo,  Abc_ObjNot(pFanin));
+    //Aig_Man_t *pAig_original = Abc_NtkToDar( pNtk, 0, 0);//temporary addition by Ajith
+    //Aig_ManDumpVerilog (pAig_original, "original.v");//temporary addition by Ajith
+
+    Abc_Obj_t* pCo = Abc_NtkPo(pNtk,0);
+    Abc_Obj_t* pFanin = Abc_ObjChild0(pCo);
+
+    assert (Abc_ObjRegular(pFanin));
+
+    negflag = Abc_ObjFaninC0(pCo);
+
+    Abc_ObjDeleteFanin(pCo, Abc_ObjFanin0(pCo));
+
+    if (negflag)
+
+                Abc_ObjAddFanin(pCo, pFanin);    
+
+    else
+
+        	Abc_ObjAddFanin(pCo,  Abc_ObjNot(pFanin)); 
 }
 
-	pAig = Abc_NtkToDar( pNtk, 0, 0);	//Find what function Ajith uses to create an Aig Manager. Use the same one
+	pAig = Abc_NtkToDar( pNtk, 0, 0);
+
+	//Aig_ManDumpVerilog (pAig, "changed.v");//temporary addition by Ajith
+
+	//Find what function Ajith uses to create an Aig Manager. Use the same one
 //#endif
 
 	if (Aig_ManNodeNum(pAig) == 0)
@@ -1795,8 +1890,14 @@ int sz;
 		bool solvedAtMaster = false;
 		startGlobalTimer_In_Cluster(timeOutTime);
 		masterCode(world, pAig, blockMap, markArray, AIGBasedSkolemObj, top_lev_blocks, timeOutTime, solvedAtMaster);	//Master node does scheduling of the blocks between processors. Also sends result data across blocks.
+
+		bool print_skolem_function_sizes = true;
+		bool perform_reverse_substitution_before_printing = true;
+		if(print_skolem_function_sizes)
+			printSkolemFunctionSizesToFile (pAig, blockMap, AIGBasedSkolemObj, aigFileName, solvedAtMaster, perform_reverse_substitution_before_printing);
+
 		if(print_skolem_functions == 1)	
-			printSkolemFunctionsToFile (pNtk, pAig, blockMap, markArray, AIGBasedSkolemObj, orderFileName, aigFileName, solvedAtMaster, non_occuring_variables_to_eliminate, order_of_elimination);
+			printSkolemFunctionsToFile (pNtk, pAig, blockMap, markArray, AIGBasedSkolemObj, orderFileName, aigFileName, solvedAtMaster, non_occuring_variables_to_eliminate, order_of_elimination, perform_reverse_substitution_before_printing);
 	}
 	else 	//Processors other than rank 0 do skolem function generation on the blocks
 	{
@@ -1828,5 +1929,6 @@ int sz;
 	}
 	return 0;
 }
+
 
 
