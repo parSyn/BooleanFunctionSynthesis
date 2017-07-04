@@ -587,6 +587,7 @@ const string UNINTERPRETED_FUNCTION_PREFIX = "f"; /// prefix of uninterpreted fu
  extern bool perform_interractive_solving_on_arbitrary_boolean_formulas;
  extern string skf_gen_algorithm;
  extern bool include_tsietin_variables_in_rsynth_qdimacs_generation;
+ extern string bdd_ordering_in_rsynth;
 
  // Declarations to make interface with SAT solver clean
  extern bool use_generic_sat_solver_interface;
