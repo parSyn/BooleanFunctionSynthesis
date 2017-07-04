@@ -515,6 +515,10 @@ bool exit_after_finding_abstract_skolem_functions = false;
  string skf_gen_algorithm = "MonoSkolem";// to simplify the options and to allow user 
  // to directly select the skf.gen. algorithm
  bool include_tsietin_variables_in_rsynth_qdimacs_generation = true;
+ string bdd_ordering_in_rsynth = "input_first"; // fully_interleaved and input_first
+ // ordering possible when the ordering is specified as external for output variables; by
+ // default, however, least-occurring-variable first order is used. Note that in any case,
+ // Tsietin variables are placed at the end. 
 
  // Declarations to make interface with SAT solver clean
  bool use_generic_sat_solver_interface = false;
@@ -1367,6 +1371,9 @@ void basic_usage()
 	cout<<"\nNEGATE-INPUT=<true/false>";
 	cout<<"\t\t\t\tto negate the input boolean formula (by default false)";
 
+	cout<<"\nAPPLY-AIG-CLEANUP=<true/false>";
+	cout<<"\t\t\t\tapply AIG-cleanup in CSeqCegar (by default true)";
+
 	cout<<"\nGRACEFUL-TIMEOUT=<time-out in seconds>";
 	cout<<"\t\t\tafter graceful-timeout, CSeqCegar skips refinement loop and";
 	cout<<"\n\t\t\t\t\t\t\treturns the initial r1/r0's (disabled by default)\n\n";
@@ -2048,7 +2055,7 @@ void setArgument(const string & name, const string &value)
 		assert(false && "Invalid Value");
 	}	        
     }
-   else if(name == "CLEANUP-AFTER-EACH-STEP-IN-ARBITRARY-BOOLEAN-COMBINATIONS")
+   else if(name == "CLEANUP-AFTER-EACH-STEP-IN-ARBITRARY-BOOLEAN-COMBINATIONS" || name == "APPLY-AIG-CLEANUP")
     {
 	if(value == "true")
 	{
@@ -12560,21 +12567,74 @@ void convertToRsynthQDimacs(Aig_Obj_t* CO_aig_manager, set<string> &ex_quantifie
 		// We should read the order from the given file
 		list<string> OrderOfVariableEliminationFromFile;
 		obtainOrderOfVariableEliminationFromFile(OrderOfVariableEliminationFromFile);	
-
 	
-		for(set<string>::iterator it = Support_formula.begin(); it != Support_formula.end(); it++)
+		if(bdd_ordering_in_rsynth == "fully_interleaved")
 		{
-			if(ex_quantifiers_in_support.find(*it) == ex_quantifiers_in_support.end())//input variable 
+			vector<string> order_of_input_variables;
+			vector<string> order_of_output_variables;
+
+			for(set<string>::iterator it = Support_formula.begin(); it != Support_formula.end(); it++)
 			{
-				order_of_variables.push_back(*it);
+				if(ex_quantifiers_in_support.find(*it) == ex_quantifiers_in_support.end())//input variable 
+				{
+					order_of_input_variables.push_back(*it);
+				}
+			}
+			for(list<string>::iterator it = OrderOfVariableEliminationFromFile.begin(); it != OrderOfVariableEliminationFromFile.end(); it++)
+			{
+				if(ex_quantifiers_in_support.find(*it) != ex_quantifiers_in_support.end())//output variable
+				{
+					order_of_output_variables.push_back(*it);
+				}
+			}
+
+			int index_variable = 0;
+			for(index_variable=0; index_variable < order_of_input_variables.size() && index_variable < order_of_output_variables.size(); index_variable++)
+			{
+				// first an input variable, then an output variable
+				order_of_variables.push_back(order_of_input_variables[index_variable]);
+				order_of_variables.push_back(order_of_output_variables[index_variable]);
+			}
+
+			if(index_variable >= order_of_input_variables.size() && index_variable < order_of_output_variables.size())//inputs are done, outputs remaining
+			{
+				for(; index_variable < order_of_output_variables.size(); index_variable++)
+				{
+					order_of_variables.push_back(order_of_output_variables[index_variable]);
+				}	
+			}
+			else if(index_variable < order_of_input_variables.size() && index_variable >= order_of_output_variables.size())//inputs are remaining, outputs are done
+			{
+				for(; index_variable < order_of_input_variables.size(); index_variable++)
+				{
+					order_of_variables.push_back(order_of_input_variables[index_variable]);
+				}	
+			}
+
+			showList(order_of_variables);	
+
+			
+		}
+		else if(bdd_ordering_in_rsynth == "input_first")
+		{	
+			for(set<string>::iterator it = Support_formula.begin(); it != Support_formula.end(); it++)
+			{
+				if(ex_quantifiers_in_support.find(*it) == ex_quantifiers_in_support.end())//input variable 
+				{
+					order_of_variables.push_back(*it);
+				}
+			}
+			for(list<string>::iterator it = OrderOfVariableEliminationFromFile.begin(); it != OrderOfVariableEliminationFromFile.end(); it++)
+			{
+				if(ex_quantifiers_in_support.find(*it) != ex_quantifiers_in_support.end())//output variable
+				{
+					order_of_variables.push_back(*it);
+				}
 			}
 		}
-		for(list<string>::iterator it = OrderOfVariableEliminationFromFile.begin(); it != OrderOfVariableEliminationFromFile.end(); it++)
+		else
 		{
-			if(ex_quantifiers_in_support.find(*it) != ex_quantifiers_in_support.end())//output variable
-			{
-				order_of_variables.push_back(*it);
-			}
+			assert(false);
 		}
 	}
 	else if(order_of_elimination_of_variables == 1)
