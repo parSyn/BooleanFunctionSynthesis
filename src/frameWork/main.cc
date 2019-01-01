@@ -30,6 +30,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include<queue>
 #include <boost/mpi.hpp>
 #include<boost/serialization/serialization.hpp>
+#include<boost/serialization/vector.hpp>
 #include <assert.h>
 #include<time.h>
 #include "block.hpp"
