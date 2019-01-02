@@ -1,4 +1,11 @@
-For executing parSyn, use, 
+The script parSyn.sh in the scripts directory can be used to run parSyn.
+Input is the aig/verilog file name and the order file.
+
+Usage: parSyn.sh aiger_or_verilog_file_name  order_file_name
+
+--------------
+
+parSyn can also be executed  by the command:
 
 mpiexec -np <number_of_cores> parSyn <input_file_name> <variable_name_file> <variable_order> <variable_order_file> <timeOutTime> <print_skolem_functions> <compute_for_neg_F> 
 

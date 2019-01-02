@@ -12,7 +12,7 @@ Prerequisites: ABC tool (from http://www.eecs.berkeley.edu/~alanmi/abc/) is a
 
 To install parSyn and SkolemFunctionGenerator, 
 1) cd src/
-2) Ensure that the variables ABC_PATH, LIBS, B_INCLUDE, and BOOST_MPI_LIBS are 
+2) Ensure that the variables ABC_PATH, BOOST_PATH, B_INCLUDE, and BOOST_MPI_LIBS are 
    properly set in Makefile.  
 3) do make
 
